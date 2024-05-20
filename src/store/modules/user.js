@@ -1,4 +1,4 @@
-import { login, logout, getInfo } from '@/api/user'
+import { login, sendMsgCode, logout, getInfo } from '@/api/user'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import router, { resetRouter } from '@/router'
 
@@ -31,12 +31,26 @@ const mutations = {
 const actions = {
   // user login
   login({ commit }, userInfo) {
-    const { username, password } = userInfo
+    const { phonenumber, msgcode } = userInfo
+    console.info('user.js actions login userInfo:' + phonenumber)
     return new Promise((resolve, reject) => {
-      login({ username: username.trim(), password: password }).then(response => {
+      login({ phonenumber: phonenumber.trim(), msgcode: msgcode }).then(response => {
         const { data } = response
         commit('SET_TOKEN', data.token)
         setToken(data.token)
+        resolve()
+      }).catch(error => {
+        reject(error)
+      })
+    })
+  },
+  // user login
+  sendMsgCode({ commit }, phonenumber) {
+    console.info('user.js actions sendMsgCode userInfo:' + phonenumber)
+    return new Promise((resolve, reject) => {
+      sendMsgCode({ phonenumber: phonenumber.trim() }).then(response => {
+        const { data } = response
+        console.log('user.js sendMsgCode data:' + data)
         resolve()
       }).catch(error => {
         reject(error)

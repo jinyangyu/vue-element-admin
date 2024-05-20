@@ -65,6 +65,15 @@ export function validEmail(email) {
 }
 
 /**
+ * @param {string} phonenumber
+ * @returns {Boolean}
+ */
+export function validPhonenumber(phonenumber) {
+  const reg = /^1[3456789]\d{9}$/
+  return reg.test(phonenumber)
+}
+
+/**
  * @param {string} str
  * @returns {Boolean}
  */

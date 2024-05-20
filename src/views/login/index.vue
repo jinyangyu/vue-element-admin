@@ -6,61 +6,48 @@
         <h3 class="title">Login Form</h3>
       </div>
 
-      <el-form-item prop="username">
+      <el-form-item prop="phonenumber">
         <span class="svg-container">
-          <svg-icon icon-class="user" />
+          <i class="el-icon-mobile-phone" />
         </span>
         <el-input
-          ref="username"
-          v-model="loginForm.username"
-          placeholder="Username"
-          name="username"
+          ref="phonenumber"
+          v-model="loginForm.phonenumber"
+          placeholder="Phonenumber"
+          name="phonenumber"
           type="text"
           tabindex="1"
-          autocomplete="on"
         />
       </el-form-item>
 
-      <el-tooltip v-model="capsTooltip" content="Caps lock is On" placement="right" manual>
-        <el-form-item prop="password">
-          <span class="svg-container">
-            <svg-icon icon-class="password" />
-          </span>
-          <el-input
-            :key="passwordType"
-            ref="password"
-            v-model="loginForm.password"
-            :type="passwordType"
-            placeholder="Password"
-            name="password"
-            tabindex="2"
-            autocomplete="on"
-            @keyup.native="checkCapslock"
-            @blur="capsTooltip = false"
-            @keyup.enter.native="handleLogin"
-          />
-          <span class="show-pwd" @click="showPwd">
-            <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" />
-          </span>
-        </el-form-item>
-      </el-tooltip>
-
+      <el-form-item prop="msgcode">
+        <span class="svg-container">
+          <svg-icon icon-class="password" />
+        </span>
+        <el-input
+          ref="msgcode"
+          v-model="loginForm.msgcode"
+          class="clear-number-input"
+          type="number"
+          placeholder="请输入验证码"
+          name="msgcode"
+          tabindex="2"
+          maxlength="4"
+          style="width: 60%"
+          on-keypress="return(/[\d]/.test(String.fromCharCode(event.keyCode)))"
+          @input.native="changeNum"
+        />
+        <el-button
+          style="width: 30%"
+          :disabled="loginForm.codeTime !== 0 && sendButtonIsDisabled"
+          :loading="buttonLoading"
+          @click="sendCodeFunc"
+        >
+          {{ getButtonTxt() }}
+        </el-button>
+      </el-form-item>
       <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;" @click.native.prevent="handleLogin">Login</el-button>
 
-      <div style="position:relative">
-        <div class="tips">
-          <span>Username : admin</span>
-          <span>Password : any</span>
-        </div>
-        <div class="tips">
-          <span style="margin-right:18px;">Username : editor</span>
-          <span>Password : any</span>
-        </div>
-
-        <el-button class="thirdparty-button" type="primary" @click="showDialog=true">
-          Or connect with
-        </el-button>
-      </div>
     </el-form>
 
     <el-dialog title="Or connect with" :visible.sync="showDialog">
@@ -74,42 +61,47 @@
 </template>
 
 <script>
-import { validUsername } from '@/utils/validate'
-import SocialSign from './components/SocialSignin'
-
+import { validPhonenumber } from '@/utils/validate'
 export default {
-  name: 'Login',
-  components: { SocialSign },
   data() {
-    const validateUsername = (rule, value, callback) => {
-      if (!validUsername(value)) {
-        callback(new Error('Please enter the correct user name'))
+    const validatePhonenumber = (rule, value, callback) => {
+      if (!validPhonenumber(value)) {
+        callback(new Error('请输入正确的手机号'))
       } else {
         callback()
       }
     }
-    const validatePassword = (rule, value, callback) => {
+    const validateMsgcode = (rule, value, callback) => {
       if (value.length < 6) {
-        callback(new Error('The password can not be less than 6 digits'))
+        callback(new Error('请输入短信内的验证码'))
       } else {
         callback()
       }
     }
     return {
       loginForm: {
-        username: 'admin',
-        password: '111111'
+        phonenumber: '18210512166',
+        msgcode: '888666',
+        codeTime: 0
       },
       loginRules: {
-        username: [{ required: true, trigger: 'blur', validator: validateUsername }],
-        password: [{ required: true, trigger: 'blur', validator: validatePassword }]
+        phonenumber: [{ required: true, trigger: 'blur', validator: validatePhonenumber }],
+        msgcode: [{ required: true, trigger: 'blur', validator: validateMsgcode }]
       },
-      passwordType: 'password',
       capsTooltip: false,
       loading: false,
+      buttonLoading: false,
+      isSendCode: false,
       showDialog: false,
       redirect: undefined,
-      otherQuery: {}
+      otherQuery: {},
+      tips: {
+        success: '验证码发送成功！',
+        fail: '验证码发送失败！',
+        coolingTime: '请耐心等待验证码！'
+      },
+      // 发送验证码期间是否禁用
+      sendButtonIsDisabled: false
     }
   },
   watch: {
@@ -125,32 +117,83 @@ export default {
     }
   },
   created() {
-    // window.addEventListener('storage', this.afterQRScan)
   },
   mounted() {
-    if (this.loginForm.username === '') {
-      this.$refs.username.focus()
-    } else if (this.loginForm.password === '') {
-      this.$refs.password.focus()
+    if (this.loginForm.phonenumber === '') {
+      this.$refs.phonenumber.focus()
+    } else if (this.loginForm.msgcode === '') {
+      this.$refs.msgcode.focus()
     }
   },
   destroyed() {
-    // window.removeEventListener('storage', this.afterQRScan)
   },
   methods: {
-    checkCapslock(e) {
-      const { key } = e
-      this.capsTooltip = key && key.length === 1 && (key >= 'A' && key <= 'Z')
-    },
-    showPwd() {
-      if (this.passwordType === 'password') {
-        this.passwordType = ''
-      } else {
-        this.passwordType = 'password'
-      }
-      this.$nextTick(() => {
-        this.$refs.password.focus()
+    alert(msg) {
+      this.$notify({
+        title: '警告',
+        message: msg,
+        type: 'warning'
       })
+    },
+    info(msg) {
+      this.$notify.info({
+        title: '消息',
+        message: msg
+      })
+    },
+
+    sendCodeFunc() {
+      const { fail, success, coolingTime } = this.tips
+      console.info('fail:' + fail + ' success:' + success + ' coolingTime:' + coolingTime + 'codeTime:' + this.loginForm.codeTime)
+      if (this.loginForm.codeTime !== 0) {
+        this.alert(coolingTime)
+        return false
+      }
+      // 手机号校验
+      this.$refs.loginForm.validateField('phonenumber', (errorMessage) => {
+        const valid = errorMessage === ''
+        if (valid) {
+          this.buttonLoading = true
+          console.log('submit!!')
+          this.$store.dispatch('user/sendMsgCode', this.loginForm.phonenumber)
+            .then(() => {
+              this.loading = false
+              this.buttonLoading = false
+              // 时间开始
+              this.loginForm.codeTime = 10
+              // 定时器
+              const time = () =>
+                setTimeout(() => {
+                  this.loginForm.codeTime -= 1
+                  if (this.loginForm.codeTime !== 0) {
+                    time()
+                  }
+                }, 1000)
+              // 执行定时器
+              time()
+              this.isSendCode = true
+              this.info('短信已发送，请注意查收')
+            })
+            .catch(() => {
+              this.loading = false
+              this.buttonLoading = false
+            })
+        } else {
+          console.log('error submit!!')
+          return false
+        }
+      })
+    },
+    getButtonTxt() {
+      if (this.loginForm.codeTime !== 0) {
+        return this.loginForm.codeTime
+      } else if (this.buttonLoading) {
+        return '发送中'
+      } else if (this.isSendCode) {
+        return '重新发送'
+      } else {
+        return '发送验证码'
+      }
     },
     handleLogin() {
       this.$refs.loginForm.validate(valid => {
@@ -177,30 +220,36 @@ export default {
         }
         return acc
       }, {})
+    },
+    changeNum() {
+      console.info('changeNum')
+      if (this.loginForm.msgcode.length > 6) {
+        this.loginForm.msgcode = this.loginForm.msgcode.slice(0, 6)
+      }
     }
-    // afterQRScan() {
-    //   if (e.key === 'x-admin-oauth-code') {
-    //     const code = getQueryObject(e.newValue)
-    //     const codeMap = {
-    //       wechat: 'code',
-    //       tencent: 'code'
-    //     }
-    //     const type = codeMap[this.auth_type]
-    //     const codeName = code[type]
-    //     if (codeName) {
-    //       this.$store.dispatch('LoginByThirdparty', codeName).then(() => {
-    //         this.$router.push({ path: this.redirect || '/' })
-    //       })
-    //     } else {
-    //       alert('第三方登录失败')
-    //     }
-    //   }
-    // }
   }
 }
 </script>
 
 <style lang="scss">
+/* 设置全局 */
+.clear-number-input.el-input::-webkit-outer-spin-button,
+.clear-number-input.el-input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none !important;
+}
+.clear-number-input.el-input input[type="number"]::-webkit-outer-spin-button,
+.clear-number-input.el-input input[type="number"]::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none !important;
+}
+.clear-number-input.el-input {
+  -moz-appearance: textfield;
+}
+.clear-number-input.el-input input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 /* 修复input 背景不协调 和光标变色 */
 /* Detail see https://github.com/PanJiaChen/vue-element-admin/pull/927 */
 

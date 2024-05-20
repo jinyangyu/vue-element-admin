@@ -29,9 +29,9 @@ module.exports = [
     url: '/vue-element-admin/user/login',
     type: 'post',
     response: config => {
-      const { username } = config.body
-      const token = tokens[username]
-
+      const { phonenumber, msgcode } = config.body
+      console.info('phonenumber:' + phonenumber + ' msgcode:' + msgcode)
+      const token = tokens['admin']
       // mock error
       if (!token) {
         return {
@@ -43,6 +43,20 @@ module.exports = [
       return {
         code: 20000,
         data: token
+      }
+    }
+  },
+
+  // user sendMsgCode
+  {
+    url: '/vue-element-admin/user/sendMsgCode',
+    type: 'post',
+    response: config => {
+      const { phonenumber } = config.body
+
+      return {
+        code: 20000,
+        data: '验证码已发送至' + phonenumber + '，请注意查收'
       }
     }
   },
