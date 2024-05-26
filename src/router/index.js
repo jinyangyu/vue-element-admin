@@ -79,7 +79,33 @@ export const constantRoutes = [
         path: 'dashboard',
         component: () => import('@/views/dashboard/index'),
         name: 'Dashboard',
-        meta: { title: 'Dashboard', icon: 'dashboard', affix: true }
+        meta: { title: '首页', icon: 'dashboard', affix: true }
+      }
+    ]
+  },
+  {
+    path: '/profiledb',
+    component: Layout,
+    redirect: '/profiledb/index',
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/profiledb/index'),
+        name: 'ProfileDB',
+        meta: { title: '个人中心', icon: 'user', noCache: true }
+      }
+    ]
+  },
+  {
+    path: '/table',
+    component: Layout,
+    redirect: '/table/complex-table',
+    children: [
+      {
+        path: 'complex-table',
+        component: () => import('@/views/table/complex-table'),
+        name: 'ComplexTable',
+        meta: { title: '数据仓库', icon: 'tree' }
       }
     ]
   },
